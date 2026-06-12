@@ -13,6 +13,7 @@ class RegisterDriverScreen(Screen):
         background: #1e1e2e;
         padding: 1;
         layout: vertical;
+        overflow-y: auto;
     }
     
     .screen_title {
@@ -27,7 +28,7 @@ class RegisterDriverScreen(Screen):
     
     #main_columns {
         layout: horizontal;
-        height: 25;
+        height: auto;
         margin-bottom: 1;
     }
     
@@ -37,6 +38,7 @@ class RegisterDriverScreen(Screen):
         border: round #45475a;
         padding: 1;
         margin-right: 1;
+        overflow-y: auto;
     }
     
     #reference_column {
