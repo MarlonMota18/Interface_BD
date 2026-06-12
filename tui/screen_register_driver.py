@@ -179,6 +179,13 @@ class RegisterDriverScreen(Screen):
             self.notify("O ID do país deve ser um número inteiro.", severity="error")
             return
             
+        try:
+            from datetime import datetime
+            datetime.strptime(dob, "%Y-%m-%d")
+        except ValueError:
+            self.notify("A Data de Nascimento deve estar no formato exato AAAA-MM-DD.", severity="error")
+            return
+            
         # Executa no banco de dados chamando a procedure que valida duplicados
         result_msg = cadastrar_novo_piloto(ref, given, family, dob, country_id)
         

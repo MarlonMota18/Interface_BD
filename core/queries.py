@@ -115,10 +115,13 @@ def cadastrar_novo_piloto(driver_ref: str, given_name: str, family_name: str, do
     A trigger correspondente em DRIVERS insere automaticamente o usuário em USERS.
     """
     query = "SELECT escuderia_inserir_piloto(%s, %s, %s, %s, %s);"
-    with get_db_cursor(commit=True) as cursor:
-        cursor.execute(query, (driver_ref, given_name, family_name, dob, country_id))
-        result = cursor.fetchone()
-        return result['escuderia_inserir_piloto'] if result else "Erro na execução."
+    try:
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute(query, (driver_ref, given_name, family_name, dob, country_id))
+            result = cursor.fetchone()
+            return result['escuderia_inserir_piloto'] if result else "Erro na execução."
+    except Exception as e:
+        return f"Erro no banco de dados: {e}"
 
 
 # ========================================================
