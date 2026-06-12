@@ -1,0 +1,14 @@
+# Ignorar ambiente virtual e caches do Python
+.venv/
+__pycache__/
+*.pyc
+
+# Ignorar segredos locais e scripts de atalhos de conexão
+run.ps1
+run.bat
+.env
+
+*.pdf
+*.csv
+*.txt
+*.tsv
