@@ -13,6 +13,8 @@
 --            id_original é INTEGER e faz referência a chave primária
 --            numérica das tabelas de origem (drivers.id ou constructors.id).
 -- --------------------------------------------------------
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS users (
     userid SERIAL PRIMARY KEY,
     login VARCHAR(100) UNIQUE NOT NULL,
@@ -53,7 +55,7 @@ BEGIN
     END IF;
     
     INSERT INTO users (login, password, tipo, id_original)
-    VALUES (v_login, NEW.constructor_ref, 'Escuderia', NEW.id);
+    VALUES (v_login, crypt(NEW.constructor_ref, gen_salt('bf')), 'Escuderia', NEW.id);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -80,7 +82,7 @@ BEGIN
     END IF;
     
     INSERT INTO users (login, password, tipo, id_original)
-    VALUES (v_login, NEW.driver_ref, 'Piloto', NEW.id);
+    VALUES (v_login, crypt(NEW.driver_ref, gen_salt('bf')), 'Piloto', NEW.id);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -110,7 +112,7 @@ BEGIN
         
         UPDATE users
         SET login = v_login_new,
-            password = NEW.constructor_ref
+            password = crypt(NEW.constructor_ref, gen_salt('bf'))
         WHERE id_original = NEW.id AND tipo = 'Escuderia';
     END IF;
     RETURN NEW;
@@ -142,7 +144,7 @@ BEGIN
         
         UPDATE users
         SET login = v_login_new,
-            password = NEW.driver_ref
+            password = crypt(NEW.driver_ref, gen_salt('bf'))
         WHERE id_original = NEW.id AND tipo = 'Piloto';
     END IF;
     RETURN NEW;
@@ -162,18 +164,18 @@ FOR EACH ROW EXECUTE FUNCTION trg_atualiza_usuario_piloto();
 
 -- Inserir administrador padrão
 INSERT INTO users (login, password, tipo, id_original)
-VALUES ('admin', 'admin', 'Admin', NULL)
+VALUES ('admin', crypt('admin', gen_salt('bf')), 'Admin', NULL)
 ON CONFLICT (login) DO NOTHING;
 
 -- Carga inicial de escuderias existentes para a tabela USERS
 INSERT INTO users (login, password, tipo, id_original)
-SELECT constructor_ref || '_c', constructor_ref, 'Escuderia', id
+SELECT constructor_ref || '_c', crypt(constructor_ref, gen_salt('bf')), 'Escuderia', id
 FROM constructors
 ON CONFLICT (login) DO NOTHING;
 
 -- Carga inicial de pilotos existentes para a tabela USERS
 INSERT INTO users (login, password, tipo, id_original)
-SELECT driver_ref || '_d', driver_ref, 'Piloto', id
+SELECT driver_ref || '_d', crypt(driver_ref, gen_salt('bf')), 'Piloto', id
 FROM drivers
 ON CONFLICT (login) DO NOTHING;
 
