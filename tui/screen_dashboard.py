@@ -35,7 +35,11 @@ def create_text_bar_chart(data_tuples, color="#a6e3a1"):
         bar_str = "█" * bar_len
         # Formata o texto garantindo alinhamento e inserindo a barra colorida
         widgets.append(Label(f"{label[:18]:<18} | [{color}]{bar_str}[/{color}] ({val})"))
-    return Vertical(*widgets)
+    
+    v = Vertical(*widgets)
+    v.styles.height = "auto"
+    v.styles.margin = (1, 0, 2, 0)
+    return v
 
 class DashboardScreen(Screen):
     """
@@ -269,22 +273,57 @@ class DashboardScreen(Screen):
                 )
                 container.mount(row)
 
-            # 2. Tabela de Desempenho por Ano e Circuito
-            container.mount(Label("[bold #89b4fa]Histórico de Desempenho por Circuito[/bold #89b4fa]"))
-            table_perf = DataTable(id="tbl_performance")
-            table_perf.add_columns("Ano", "Circuito", "Pontos", "Vitórias", "Corridas")
-            
+            # 2. Agregação de Desempenho por Ano e por Circuito
             perf_data = get_piloto_desempenho(user['id_original'])
-            for row_data in perf_data:
-                table_perf.add_row(
-                    str(row_data['ano']), row_data['circuito_nome'], 
-                    str(row_data['pontos']), str(row_data['vitorias']), str(row_data['corridas'])
-                )
-            container.mount(table_perf)
             
-            if perf_data:
-                container.mount(Label("[bold #89b4fa]Evolução de Pontos por Corrida (Gráfico)[/bold #89b4fa]"))
-                container.mount(create_text_bar_chart([(str(r['ano']) + " " + r['circuito_nome'], float(r['pontos'] or 0)) for r in perf_data], color="#a6e3a1"))
+            por_ano = {}
+            por_circuito = {}
+            
+            for row in perf_data:
+                ano = str(row['ano'])
+                circ = row['circuito_nome']
+                pts = float(row['pontos'] or 0)
+                vits = int(row['vitorias'] or 0)
+                corrs = int(row['corridas'] or 0)
+                
+                if ano not in por_ano:
+                    por_ano[ano] = {'pontos': 0, 'vitorias': 0, 'corridas': 0}
+                por_ano[ano]['pontos'] += pts
+                por_ano[ano]['vitorias'] += vits
+                por_ano[ano]['corridas'] += corrs
+                
+                if circ not in por_circuito:
+                    por_circuito[circ] = {'pontos': 0, 'vitorias': 0, 'corridas': 0}
+                por_circuito[circ]['pontos'] += pts
+                por_circuito[circ]['vitorias'] += vits
+                por_circuito[circ]['corridas'] += corrs
+
+            # Tabela por Ano
+            container.mount(Label("[bold #89b4fa]Desempenho por Ano[/bold #89b4fa]"))
+            table_ano = DataTable(id="tbl_perf_ano")
+            table_ano.add_columns("Ano", "Pontos Obtidos", "Vitórias", "Total de Corridas")
+            
+            for ano in sorted(por_ano.keys()):
+                d = por_ano[ano]
+                table_ano.add_row(ano, str(d['pontos']), str(d['vitorias']), str(d['corridas']))
+            container.mount(table_ano)
+            
+            # Gráfico de Evolução (Agregado por Ano)
+            if por_ano:
+                container.mount(Label("[bold #89b4fa]Evolução de Pontos por Ano (Gráfico)[/bold #89b4fa]"))
+                chart_data = [(ano, por_ano[ano]['pontos']) for ano in sorted(por_ano.keys())]
+                container.mount(create_text_bar_chart(chart_data, color="#a6e3a1"))
+
+            # Tabela por Circuito
+            container.mount(Label("[bold #89b4fa]Desempenho por Circuito[/bold #89b4fa]"))
+            table_circ = DataTable(id="tbl_perf_circ")
+            table_circ.add_columns("Circuito", "Pontos Obtidos", "Vitórias", "Total de Corridas")
+            
+            # Ordena circuitos por nome
+            for circ in sorted(por_circuito.keys()):
+                d = por_circuito[circ]
+                table_circ.add_row(circ, str(d['pontos']), str(d['vitorias']), str(d['corridas']))
+            container.mount(table_circ)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """

@@ -23,6 +23,8 @@ class ReportsScreen(Screen):
         layout: horizontal;
         background: #1e1e2e;
         padding: 1;
+        height: 1fr;
+        overflow: hidden;
     }
     
     #sidebar {
@@ -32,6 +34,7 @@ class ReportsScreen(Screen):
         padding: 1;
         margin-right: 1;
         layout: vertical;
+        height: 1fr;
     }
     
     #content_area {
@@ -40,6 +43,8 @@ class ReportsScreen(Screen):
         background: #181825;
         border: round #45475a;
         padding: 1;
+        height: 1fr;
+        overflow: hidden;
     }
     
     .sidebar_title {
@@ -122,7 +127,8 @@ class ReportsScreen(Screen):
     }
     
     DataTable {
-        height: 100%;
+        width: 1fr;
+        height: 1fr;
         border: round #45475a;
         background: #181825;
     }
@@ -306,6 +312,7 @@ class ReportsScreen(Screen):
     def load_relatorio_3(self):
         table = self.query_one("#tbl_report", DataTable)
         table.clear(columns=True)
+        table.cursor_type = "row"  # Essencial para acionar RowSelected
         table.add_columns("ID Circuito", "Nome do Circuito", "Total Corridas", "Mín Voltas", "Média Voltas", "Máx Voltas")
         
         data = get_relatorio_3_circuitos()
@@ -383,11 +390,12 @@ class ReportsScreen(Screen):
         user = self.app.user_session
         table = self.query_one("#tbl_report", DataTable)
         table.clear(columns=True)
-        table.add_columns("Ano", "Corrida", "Pontos Obtidos")
+        table.cursor_type = "cell"  # Habilita rolagem celular para textos muito longos
+        table.add_columns("Ano", "Total de Pontos", "Corridas Pontuadas (Detalhes)")
         
         data = get_relatorio_6_pontos_piloto(user['id_original'])
         for row in data:
-            table.add_row(str(row['ano']), row['corrida'], str(row['pontos']))
+            table.add_row(str(row['ano']), str(row['total_pontos']), row['corridas_lista'])
         self.notify("Pontos por ano carregados.", severity="information")
 
     def load_relatorio_7(self):

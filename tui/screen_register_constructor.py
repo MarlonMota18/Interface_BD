@@ -109,14 +109,14 @@ class RegisterConstructorScreen(Screen):
                 with Vertical(id="form_column"):
                     yield Label("Formulário de Entrada", classes="column_title")
                     
-                    yield Label("Constructor Ref (ex: mclaren):")
+                    yield Label("Constructor ID (ex: mclaren):")
                     yield Input(placeholder="Código curto (minúsculas, sem espaço)", id="txt_ref")
                     
                     yield Label("Nome da Escuderia (ex: McLaren):")
                     yield Input(placeholder="Nome oficial", id="txt_name")
                     
-                    yield Label("ID do País (ver tabela ao lado):")
-                    yield Input(placeholder="Digite o ID numérico do país", id="txt_country_id")
+                    yield Label("Nationality (ex: British):")
+                    yield Input(placeholder="Nacionalidade", id="txt_nationality")
                     
                     yield Label("URL Wikipédia (Opcional):")
                     yield Input(placeholder="http://...", id="txt_wiki")
@@ -125,7 +125,7 @@ class RegisterConstructorScreen(Screen):
                     
                 # Tabela de referência de países
                 with Vertical(id="reference_column"):
-                    yield Label("Tabela de Referência: Países e IDs", classes="column_title")
+                    yield Label("Tabela de Referência: Nacionalidades", classes="column_title")
                     yield DataTable(id="tbl_countries")
             
             with Horizontal(classes="bottom_actions"):
@@ -137,11 +137,11 @@ class RegisterConstructorScreen(Screen):
     def on_mount(self) -> None:
         # Carrega a tabela de países
         table = self.query_one("#tbl_countries", DataTable)
-        table.add_columns("ID", "Nome do País")
+        table.add_columns("ID", "Nacionalidade")
         
         countries = get_countries()
         for c in countries:
-            table.add_row(str(c['id']), c['name'])
+            table.add_row(str(c['id']), c['nationality'] if c['nationality'] else "N/A")
             
         self.query_one("#txt_ref").focus()
 
@@ -162,28 +162,22 @@ class RegisterConstructorScreen(Screen):
     def save_constructor(self):
         ref = self.query_one("#txt_ref", Input).value.strip()
         name = self.query_one("#txt_name", Input).value.strip()
-        country_id_str = self.query_one("#txt_country_id", Input).value.strip()
+        nationality = self.query_one("#txt_nationality", Input).value.strip()
         wiki = self.query_one("#txt_wiki", Input).value.strip()
         
-        if not ref or not name or not country_id_str:
+        if not ref or not name or not nationality:
             self.notify("Por favor, preencha todos os campos obrigatórios.", severity="error")
             return
             
-        try:
-            country_id = int(country_id_str)
-        except ValueError:
-            self.notify("O ID do país deve ser um número inteiro.", severity="error")
-            return
-            
         # Executa no banco de dados
-        result_msg = cadastrar_escuderia(ref, name, country_id, wiki)
+        result_msg = cadastrar_escuderia(ref, name, nationality, wiki)
         
         if "sucesso" in result_msg:
             self.notify(result_msg, severity="information")
             # Limpa formulário
             self.query_one("#txt_ref", Input).value = ""
             self.query_one("#txt_name", Input).value = ""
-            self.query_one("#txt_country_id", Input).value = ""
+            self.query_one("#txt_nationality", Input).value = ""
             self.query_one("#txt_wiki", Input).value = ""
             self.query_one("#txt_ref").focus()
         else:

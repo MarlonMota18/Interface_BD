@@ -109,26 +109,26 @@ class RegisterDriverScreen(Screen):
                 with Vertical(id="form_column"):
                     yield Label("Formulário de Entrada", classes="column_title")
                     
-                    yield Label("Driver Ref (ex: hamilton):")
-                    yield Input(placeholder="Código curto (minúsculas, sem espaço)", id="txt_ref")
+                    yield Label("Driver ID (ex: markinho):")
+                    yield Input(placeholder="Código curto", id="txt_driver_id")
                     
-                    yield Label("Primeiro Nome (ex: Lewis):")
-                    yield Input(placeholder="Primeiro nome do piloto", id="txt_given")
+                    yield Label("Given Name (ex: Mark):")
+                    yield Input(placeholder="Primeiro nome do piloto", id="txt_givenName")
                     
-                    yield Label("Sobrenome (ex: Hamilton):")
-                    yield Input(placeholder="Sobrenome do piloto", id="txt_family")
+                    yield Label("Family Name (ex: Takakura):")
+                    yield Input(placeholder="Sobrenome do piloto", id="txt_familyName")
                     
-                    yield Label("Data de Nascimento (AAAA-MM-DD):")
-                    yield Input(placeholder="Ex: 1985-01-07", id="txt_dob")
+                    yield Label("Nationality (ex: brazilian):")
+                    yield Input(placeholder="Nacionalidade do piloto", id="txt_nationality")
                     
-                    yield Label("ID do País (ver tabela ao lado):")
-                    yield Input(placeholder="Digite o ID numérico do país", id="txt_country_id")
+                    yield Label("Date of Birth (AAAA-MM-DD):")
+                    yield Input(placeholder="Ex: 2005-05-25", id="txt_dob")
                     
                     yield Button("Salvar Cadastro", id="btn_save")
                     
                 # Tabela de referência de países
                 with Vertical(id="reference_column"):
-                    yield Label("Tabela de Referência: Países e IDs", classes="column_title")
+                    yield Label("Tabela de Referência: Nacionalidades", classes="column_title")
                     yield DataTable(id="tbl_countries")
             
             with Horizontal(classes="bottom_actions"):
@@ -140,13 +140,13 @@ class RegisterDriverScreen(Screen):
     def on_mount(self) -> None:
         # Carrega a tabela de países
         table = self.query_one("#tbl_countries", DataTable)
-        table.add_columns("ID", "Nome do País")
+        table.add_columns("ID", "Nacionalidade")
         
         countries = get_countries()
         for c in countries:
-            table.add_row(str(c['id']), c['name'])
+            table.add_row(str(c['id']), c['nationality'] if c['nationality'] else "N/A")
             
-        self.query_one("#txt_ref").focus()
+        self.query_one("#txt_driver_id").focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn_back_dashboard":
@@ -163,20 +163,14 @@ class RegisterDriverScreen(Screen):
             self.save_driver()
 
     def save_driver(self):
-        ref = self.query_one("#txt_ref", Input).value.strip()
-        given = self.query_one("#txt_given", Input).value.strip()
-        family = self.query_one("#txt_family", Input).value.strip()
+        driver_id = self.query_one("#txt_driver_id", Input).value.strip()
+        givenName = self.query_one("#txt_givenName", Input).value.strip()
+        familyName = self.query_one("#txt_familyName", Input).value.strip()
+        nationality = self.query_one("#txt_nationality", Input).value.strip()
         dob = self.query_one("#txt_dob", Input).value.strip()
-        country_id_str = self.query_one("#txt_country_id", Input).value.strip()
         
-        if not ref or not given or not family or not dob or not country_id_str:
+        if not driver_id or not givenName or not familyName or not nationality or not dob:
             self.notify("Por favor, preencha todos os campos obrigatórios.", severity="error")
-            return
-            
-        try:
-            country_id = int(country_id_str)
-        except ValueError:
-            self.notify("O ID do país deve ser um número inteiro.", severity="error")
             return
             
         try:
@@ -187,16 +181,16 @@ class RegisterDriverScreen(Screen):
             return
             
         # Executa no banco de dados chamando a procedure que valida duplicados
-        result_msg = cadastrar_novo_piloto(ref, given, family, dob, country_id)
+        result_msg = cadastrar_novo_piloto(driver_id, givenName, familyName, nationality, dob)
         
         if "com sucesso" in result_msg:
             self.notify(result_msg, severity="information")
             # Limpa formulário
-            self.query_one("#txt_ref", Input).value = ""
-            self.query_one("#txt_given", Input).value = ""
-            self.query_one("#txt_family", Input).value = ""
+            self.query_one("#txt_driver_id", Input).value = ""
+            self.query_one("#txt_givenName", Input).value = ""
+            self.query_one("#txt_familyName", Input).value = ""
+            self.query_one("#txt_nationality", Input).value = ""
             self.query_one("#txt_dob", Input).value = ""
-            self.query_one("#txt_country_id", Input).value = ""
-            self.query_one("#txt_ref").focus()
+            self.query_one("#txt_driver_id").focus()
         else:
             self.notify(result_msg, severity="error")

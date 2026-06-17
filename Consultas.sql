@@ -534,24 +534,28 @@ $$ LANGUAGE plpgsql;
 -- [PILOTO] Relatório 6: Pontos obtidos por ano e corridas
 -- Tipo: Function (Recebe driver_id do piloto logado)
 -- --------------------------------------------------------
+-- Índices para otimizar o Relatório 6
+CREATE INDEX IF NOT EXISTS idx_results_driver_points ON results(driver_id, points);
+CREATE INDEX IF NOT EXISTS idx_races_season_id ON races(season_id);
+
 CREATE OR REPLACE FUNCTION relatorio_6_pontos_piloto(p_driver_id INTEGER)
 RETURNS TABLE(
     ano INTEGER,
-    corrida VARCHAR,
-    pontos NUMERIC
+    total_pontos NUMERIC,
+    corridas_lista TEXT
 ) AS $$
 BEGIN
     RETURN QUERY
     SELECT 
         s.year::INTEGER AS ano,
-        r.race_name::VARCHAR AS corrida,
-        SUM(res.points)::NUMERIC AS pontos
+        SUM(res.points)::NUMERIC AS total_pontos,
+        STRING_AGG(r.race_name || ' (' || res.points || ' pts)', ', ' ORDER BY r.race_date)::TEXT AS corridas_lista
     FROM results res
     JOIN races r ON res.race_id = r.id
     JOIN seasons s ON r.season_id = s.id
-    WHERE res.driver_id = p_driver_id
-    GROUP BY s.year, r.id, r.race_name
-    ORDER BY s.year DESC, pontos DESC;
+    WHERE res.driver_id = p_driver_id AND res.points > 0
+    GROUP BY s.year
+    ORDER BY s.year DESC;
 END;
 $$ LANGUAGE plpgsql;
 

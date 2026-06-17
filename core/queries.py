@@ -109,19 +109,28 @@ def buscar_piloto_por_sobrenome(constructor_ref: str, sobrenome: str):
         cursor.execute(query, (constructor_ref, sobrenome))
         return cursor.fetchall()
 
-def cadastrar_novo_piloto(driver_ref: str, given_name: str, family_name: str, dob: str, country_id: int) -> str:
+def cadastrar_novo_piloto(driver_id: str, givenName: str, familyName: str, nationality: str, dob: str) -> str:
     """
-    Chama a procedure escuderia_inserir_piloto no banco.
-    A trigger correspondente em DRIVERS insere automaticamente o usuário em USERS.
+    Resolve a nacionalidade para o country_id e chama a procedure escuderia_inserir_piloto no banco.
     """
-    query = "SELECT escuderia_inserir_piloto(%s, %s, %s, %s, %s);"
+    query_country = "SELECT id FROM countries WHERE nationality ILIKE %s LIMIT 1;"
+    query_insert = "SELECT escuderia_inserir_piloto(%s, %s, %s, %s, %s);"
     try:
         with get_db_cursor(commit=True) as cursor:
-            cursor.execute(query, (driver_ref, given_name, family_name, dob, country_id))
+            # 1. Resolve a nacionalidade
+            cursor.execute(query_country, (nationality,))
+            row = cursor.fetchone()
+            if not row:
+                return f"Nacionalidade '{nationality}' não encontrada."
+            country_id = row['id']
+            
+            # 2. Insere
+            cursor.execute(query_insert, (driver_id, givenName, familyName, dob, country_id))
             result = cursor.fetchone()
             return result['escuderia_inserir_piloto'] if result else "Erro na execução."
     except Exception as e:
         return f"Erro no banco de dados: {e}"
+
 
 
 # ========================================================
@@ -203,27 +212,35 @@ def get_relatorio_7_status_piloto(driver_id: int):
 
 def get_countries():
     """
-    Retorna a lista de países cadastrados com seus IDs e nomes, ordenados alfabeticamente.
+    Retorna a lista de países cadastrados com suas nacionalidades.
     """
-    query = "SELECT id, name FROM countries ORDER BY name;"
+    query = "SELECT id, name, nationality FROM countries WHERE nationality IS NOT NULL ORDER BY nationality;"
     with get_db_cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
 
 
-def cadastrar_escuderia(constructor_ref: str, name: str, country_id: int, wikipedia_url: str) -> str:
+def cadastrar_escuderia(constructor_ref: str, name: str, nationality: str, wikipedia_url: str) -> str:
     """
-    Cadastra uma nova escuderia na tabela CONSTRUCTORS.
+    Cadastra uma nova escuderia na tabela CONSTRUCTORS resolvendo a nacionalidade.
     A trigger correspondente insere automaticamente o usuário em USERS.
     """
-    query = """
+    query_country = "SELECT id FROM countries WHERE nationality ILIKE %s LIMIT 1;"
+    query_insert = """
         INSERT INTO constructors (id, constructor_ref, name, country_id, wikipedia_url)
         VALUES ((SELECT COALESCE(MAX(id), 0) + 1 FROM constructors), %s, %s, %s, %s)
         RETURNING name;
     """
     try:
         with get_db_cursor(commit=True) as cursor:
-            cursor.execute(query, (constructor_ref, name, country_id, wikipedia_url or None))
+            # Resolve a nacionalidade
+            cursor.execute(query_country, (nationality,))
+            row = cursor.fetchone()
+            if not row:
+                return f"Nacionalidade '{nationality}' não encontrada."
+            country_id = row['id']
+            
+            cursor.execute(query_insert, (constructor_ref, name, country_id, wikipedia_url or None))
             result = cursor.fetchone()
             if result:
                 return f"Escuderia '{result['name']}' cadastrada com sucesso!"
