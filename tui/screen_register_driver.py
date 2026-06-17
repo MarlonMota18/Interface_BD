@@ -1,7 +1,7 @@
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Label, Button, Input, DataTable
 from textual.containers import Container, Horizontal, Vertical
-from core.queries import cadastrar_novo_piloto, get_countries
+from core.queries import cadastrar_novo_piloto_por_nacionalidade, get_countries
 
 class RegisterDriverScreen(Screen):
     """
@@ -181,7 +181,7 @@ class RegisterDriverScreen(Screen):
             return
             
         # Executa no banco de dados chamando a procedure que valida duplicados
-        result_msg = cadastrar_novo_piloto(driver_id, givenName, familyName, nationality, dob)
+        result_msg = cadastrar_novo_piloto_por_nacionalidade(driver_id, givenName, familyName, nationality, dob)
         
         if "com sucesso" in result_msg:
             self.notify(result_msg, severity="information")

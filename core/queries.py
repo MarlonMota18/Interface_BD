@@ -109,7 +109,20 @@ def buscar_piloto_por_sobrenome(constructor_ref: str, sobrenome: str):
         cursor.execute(query, (constructor_ref, sobrenome))
         return cursor.fetchall()
 
-def cadastrar_novo_piloto(driver_id: str, givenName: str, familyName: str, nationality: str, dob: str) -> str:
+def cadastrar_novo_piloto(driver_ref: str, given_name: str, family_name: str, dob: str, country_id: int) -> str:
+    """
+    Chama a procedure escuderia_inserir_piloto no banco. (Versão original com country_id)
+    """
+    query = "SELECT escuderia_inserir_piloto(%s, %s, %s, %s, %s);"
+    try:
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute(query, (driver_ref, given_name, family_name, dob, country_id))
+            result = cursor.fetchone()
+            return result['escuderia_inserir_piloto'] if result else "Erro na execução."
+    except Exception as e:
+        return f"Erro no banco de dados: {e}"
+
+def cadastrar_novo_piloto_por_nacionalidade(driver_id: str, givenName: str, familyName: str, nationality: str, dob: str) -> str:
     """
     Resolve a nacionalidade para o country_id e chama a procedure escuderia_inserir_piloto no banco.
     """

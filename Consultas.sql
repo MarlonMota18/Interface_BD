@@ -204,8 +204,9 @@ FROM results res
 JOIN races r ON res.race_id = r.id
 JOIN constructors con ON res.constructor_id = con.id
 WHERE r.season_id = (SELECT season_id FROM recent_season)
-GROUP BY con.id, con.name;
-
+GROUP BY con.id, con.name
+ ORDER BY total_pontos DESC;
+ 
 -- --------------------------------------------------------
 -- View: view_dashboard_admin_pilotos
 -- Descrição: Pontuação total dos pilotos na temporada mais recente (Dashboard Admin)
@@ -226,7 +227,8 @@ FROM results res
 JOIN races r ON res.race_id = r.id
 JOIN drivers d ON res.driver_id = d.id
 WHERE r.season_id = (SELECT season_id FROM recent_season)
-GROUP BY d.id, d.given_name, d.family_name;
+GROUP BY d.id, d.given_name, d.family_name
+ ORDER BY total_pontos DESC;
 
 
 -- ========================================================

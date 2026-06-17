@@ -8,7 +8,7 @@ class ImportDriversScreen(Screen):
     """
     Tela para inserção em lote de pilotos por meio de arquivo de texto (RF-10).
     Cada linha do arquivo deve ser estruturada como:
-    driver_id, givenName, familyName, nationality, dob (YYYY-MM-DD)
+    driver_ref, given_name, family_name, date_of_birth (YYYY-MM-DD), country_id
     """
     
     CSS = """
@@ -151,27 +151,28 @@ class ImportDriversScreen(Screen):
                     table.add_row(str(idx), "-", "[yellow]Ignorado (linha em branco)[/yellow]")
                     continue
                 
-                # Ignora a linha de cabeçalho
-                if clean_line.startswith("driver_id,") or clean_line.startswith("driver_ref,"):
-                    table.add_row(str(idx), clean_line, "[yellow]Ignorado (cabeçalho)[/yellow]")
-                    continue
-                
-                # O formato esperado é: driver_id, givenName, familyName, nationality, dob
+                # O formato esperado é: driver_ref, given_name, family_name, date_of_birth, country_id
                 parts = [p.strip() for p in clean_line.split(',')]
                 if len(parts) != 5:
                     table.add_row(str(idx), clean_line, "[red]Erro: Formato inválido (deve conter 5 campos separados por vírgula)[/red]")
                     continue
                     
-                driver_id, givenName, familyName, nationality, dob = parts
+                driver_ref, given_name, family_name, dob, country_id_str = parts
+                
+                try:
+                    country_id = int(country_id_str)
+                except ValueError:
+                    table.add_row(str(idx), clean_line, "[red]Erro: country_id deve ser um número inteiro[/red]")
+                    continue
                 
                 # Executa a procedure no banco de dados
-                result_msg = cadastrar_novo_piloto(driver_id, givenName, familyName, nationality, dob)
+                result_msg = cadastrar_novo_piloto(driver_ref, given_name, family_name, dob, country_id)
                 
                 if "com sucesso" in result_msg:
                     success_count += 1
-                    table.add_row(str(idx), f"{givenName} {familyName} ({driver_id})", f"[green]{result_msg}[/green]")
+                    table.add_row(str(idx), f"{given_name} {family_name} ({driver_ref})", f"[green]{result_msg}[/green]")
                 else:
-                    table.add_row(str(idx), f"{givenName} {familyName} ({driver_id})", f"[red]{result_msg}[/red]")
+                    table.add_row(str(idx), f"{given_name} {family_name} ({driver_ref})", f"[red]{result_msg}[/red]")
                     
             self.notify(f"Processamento concluído. {success_count} pilotos importados com sucesso.", severity="information")
             
